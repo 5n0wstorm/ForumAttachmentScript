@@ -276,7 +276,15 @@ function getLinks2(post) {
                 link2 = link2.replace('cdn.', 'stream.');
                 link2 = link2.replace(".to/", ".to/d/");
             }
+            else if (link2 && link2.includes('cdn.bunkr' && '.MP4')) {
+                link2 = link2.replace('cdn.', 'stream.');
+                link2 = link2.replace(".to/", ".to/d/");
+            }
             else if (link2 && link2.includes('cdn.bunkr' && '.mov')) {
+                link2 = link2.replace('cdn.', 'stream.');
+                link2 = link2.replace(".to/", ".to/d/");
+            }
+            else if (link2 && link2.includes('cdn.bunkr' && '.MOV')) {
                 link2 = link2.replace('cdn.', 'stream.');
                 link2 = link2.replace(".to/", ".to/d/");
             }
