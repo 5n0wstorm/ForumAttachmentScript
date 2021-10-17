@@ -2,7 +2,7 @@
 // @name Various Forums Gallery Downloader
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.2.8
+// @version 1.2.8.1
 // @icon https://i.imgur.com/5xpgAny.jpg
 // @license WTFPL; http://www.wtfpl.net/txt/copying/
 // @match https://forum.sexy-egirls.com/threads/*
@@ -13,8 +13,7 @@
 // @connect self
 // @connect sexy-egirls.com
 // @connect bunkr.to
-// @connect cdn.bunkr.to
-// @connect stream.bunkr.to
+// @connect bunkr.is
 // @connect cyberdrop.me
 // @connect cyberdrop.cc
 // @connect cyberdrop.nl
@@ -270,25 +269,33 @@ function getLinks2(post) {
             let link2;
                 link2 = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
             if (link2 && link2.includes('stream.bunkr.to/v/')) {
-                link2 = link2.replace(".to/v/", ".to/d/");
+                link2 = link2.replace(".to/v/", ".is/d/");
+            }
+            else if (link2 && link2.includes('stream.bunkr.is/v/')) {
+                link2 = link2.replace(".is/v/", ".is/d/");
             }
             else if (link2 && link2.includes('cdn.bunkr' && '.mp4')) {
                 link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".to/", ".to/d/");
+                link2 = link2.replace(".is/", ".is/d/");
+                link2 = link2.replace(".to/", ".is/d/");
+
             }
-            else if (link2 && link2.includes('cdn.bunkr' && '.MP4')) {
+            else if (link2 && link2.includes('cdn.bunkr.to' && '.MP4')) {
                 link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".to/", ".to/d/");
+                link2 = link2.replace(".is/", ".is/d/");
+                link2 = link2.replace(".to/", ".is/d/");
             }
-            else if (link2 && link2.includes('cdn.bunkr' && '.mov')) {
+            else if (link2 && link2.includes('cdn.bunkr.to' && '.mov')) {
                 link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".to/", ".to/d/");
+                link2 = link2.replace(".is/", ".is/d/");
+                link2 = link2.replace(".to/", ".is/d/");
             }
-            else if (link2 && link2.includes('cdn.bunkr' && '.MOV')) {
+            else if (link2 && link2.includes('cdn.bunkr.to' && '.MOV')) {
                 link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".to/", ".to/d/");
+                link2 = link2.replace(".is/", ".is/d/");
+                link2 = link2.replace(".to/", ".is/d/");
             }
-            else if (link2 && link2.includes('cdn.bunkr' && '.zip')) {
+            else if (link2 && link2.includes('cdn.bunkr.to' && '.zip')) {
                 link2 = link2
             }
             else {
@@ -297,7 +304,7 @@ function getLinks2(post) {
             if (typeof link2 === 'undefined') {
                 link2 = '';
             }
-            //console.log($(this)[0]);
+            console.log($(this)[0]);
             return link2;
         })
         .get();
