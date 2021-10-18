@@ -41,6 +41,7 @@
 
 
 // ==/UserScript==
+// Update to 1.3.0 to celebrate auto update success
 const imgurBase = 'https://i.imgur.com/{hash}.mp4';
 /**
 * Set to 'true', if you wanna be asked to input zip name on your own.
