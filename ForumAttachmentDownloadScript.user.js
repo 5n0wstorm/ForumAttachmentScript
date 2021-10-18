@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.2.9
+// @version 1.3.0
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -41,7 +41,6 @@
 
 
 // ==/UserScript==
-// testing asada
 const imgurBase = 'https://i.imgur.com/{hash}.mp4';
 /**
 * Set to 'true', if you wanna be asked to input zip name on your own.
