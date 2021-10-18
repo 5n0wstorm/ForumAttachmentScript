@@ -4,8 +4,8 @@
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
 // @version 1.2.9
-// @updateURL https://github.com/MandoCoding/ForumAttachmentScript/edit/main/ForumAttachmentDownloadScript.user.js
-// @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/edit/main/ForumAttachmentDownloadScript.user.js
+// @updateURL https://github.com/MandoCoding/ForumAttachmentScript/blob/main/ForumAttachmentDownloadScript.user.js
+// @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/blob/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
 // @license WTFPL; http://www.wtfpl.net/txt/copying/
 // @match https://forum.sexy-egirls.com/threads/*
