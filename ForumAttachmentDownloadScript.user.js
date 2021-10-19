@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.3.0
+// @version 1.3.1
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -32,6 +32,7 @@
 // @connect nhentai-proxy.herokuapp.com
 // @connect pbs.twimg.com
 // @connect cdn.discordapp.com
+// @connect pixeldrain.com
 // @run-at document-start
 // @grant GM_xmlhttpRequest
 // @grant GM_download
@@ -41,7 +42,7 @@
 
 
 // ==/UserScript==
-// Update to 1.3.0 to celebrate auto update success
+
 const imgurBase = 'https://i.imgur.com/{hash}.mp4';
 /**
 * Set to 'true', if you wanna be asked to input zip name on your own.
@@ -86,9 +87,9 @@ const getThreadTitle = () => {
         return child.nodeType === 3 && !isNullOrEmpty(child.textContent) ? (title += child.textContent) : '';
     });
     // Check for title in object
-    if (typeof threadTitle === Object){
-            threadTitle = threadTitle['wholeText']
-        }
+    if (typeof threadTitle === Object) {
+        threadTitle = threadTitle['wholeText']
+    }
     threadTitle = threadTitle.toString();
     // Remove emoji from title
     if (!ALLOW_THREAD_TITLE_EMOJI) {
@@ -125,11 +126,12 @@ function humanFileSize(bytes, si = false, dp = 1) {
     } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
     return bytes.toFixed(dp) + ' ' + units[u];
 }
+
 function download(post, fileName) {
     var $text = $(post).children('a');
-    var urls1 = getLinks(post, false);
-    var urls2 = getLinks2(post, false);
-    var urls = urls1.concat(urls2)
+    var urlsPost = getPostLinks(post, false);
+    var urlsExternal = getAllExternalLinks(post, false);
+    var urls = urlsPost.concat(urlsExternal);
     var thanks = false;
     urls = urls.filter(function (e) { return e });
     var zip = new JSZip(),
@@ -197,21 +199,21 @@ function download(post, fileName) {
                         });
                     }
                 });
-            //Distribute some love for your downloaded post if it was actually successfull
-                let likeTag;
-                let likeID;
-                try{
-                    likeTag = post.parentNode.parentNode.parentNode.querySelector('.reaction--imageHidden');
-                    likeID = likeTag.getAttribute('data-th-react-plus-content-id');
-                    likeTag.setAttribute("href", `/posts/${likeID}/react?reaction_id=49`);
-                    likeTag.click();
-                }catch {
+            //Distribute some love for your downloaded post if it was actually successful
+            let likeTag;
+            let likeID;
+            try {
+                likeTag = post.parentNode.parentNode.parentNode.querySelector('.reaction--imageHidden');
+                likeID = likeTag.getAttribute('data-th-react-plus-content-id');
+                likeTag.setAttribute("href", `/posts/${likeID}/react?reaction_id=49`);
+                likeTag.click();
+            } catch {
             }
         }
     }
     next();
 }
-function getLinks(post) {
+function getPostLinks(post) {
     return $(post)
         .parents('.message-main')
         .first()
@@ -228,41 +230,48 @@ function getLinks(post) {
             } else {
                 link = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
             }
-            if (link && link.includes('putme.ga')) {
-                link = link.replace('.th.', '.');
-                link = link.replace(".md.", ".");
-            }
-            if (link && link.includes('/image/')) {
+
+            if (typeof link !== 'undefined' && link) {
+
+                if (link.includes('putme.ga')) {
+                    link = link.replace('.th.', '.');
+                    link = link.replace(".md.", ".");
+                }
+
+                if (link.includes('pixl.is')) {
+                    link = link.replace('.th.', '.');
+                    link = link.replace(".md.", ".");
+                }
+
+                if (link.includes('pixhost.to')) {
+                    link = link.replace('//t', '//img');
+                    link = link.replace("thumbs", "images");
+                }
+
+                if (link.includes('imgbox.com')) {
+                    link = link.replace('//thumbs', '//images');
+                    link = link.replace("_t.", "_o.");
+                }
+
+                if (link.includes('preview.redd.it')) {
+                    link = link.split('?')[0];
+                    link = link.replace('preview', 'i');
+                }
+
+                if (link.includes('dropbox.com')) {
+                    link = link.replace('?dl=0', '?dl=1');
+                }
+
+            } else {
                 link = '';
             }
-            if (link && link.includes('pixl.is')) {
-                link = link.replace('.th.', '.');
-                link = link.replace(".md.", ".");
-            }
-            if (link && link.includes('pixhost.to')) {
-                link = link.replace('//t', '//img');
-                link = link.replace("thumbs", "images");
-            }
-            if (link && link.includes('imgbox.com')) {
-                link = link.replace('//thumbs', '//images');
-                link = link.replace("_t.", "_o.");
-            }
-            if (link && link.includes('preview.redd.it')){
-                link = link.split('?')[0]
-                link = link.replace('preview', 'i');
-            }
-            if (link && link.includes('dropbox.com')){
-                link = link.replace('?dl=0', '?dl=1');
-            }
-            if (typeof link === 'undefined') {
-                link = '';
-            }
-            //console.log($(this)[0]);
+
             return link;
         })
         .get();
 }
-function getLinks2(post) {
+
+function getAllExternalLinks(post) {
     return $(post)
         .parents('.message-main')
         .first()
@@ -270,49 +279,47 @@ function getLinks2(post) {
         .first()
         .find('a.link--external')
         .map(function () {
-            let link2;
-                link2 = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
-            if (link2 && link2.includes('stream.bunkr.to/v/')) {
-                link2 = link2.replace(".to/v/", ".is/d/");
-            }
-            else if (link2 && link2.includes('stream.bunkr.is/v/')) {
-                link2 = link2.replace(".is/v/", ".is/d/");
-            }
-            else if (link2 && link2.includes('cdn.bunkr' && '.mp4')) {
-                link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".is/", ".is/d/");
-                link2 = link2.replace(".to/", ".is/d/");
+            let linkExternal;
+            linkExternal = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
 
+            if (typeof linkExternal === 'undefined') {
+                linkExternal = '';
             }
-            else if (link2 && link2.includes('cdn.bunkr.to' && '.MP4')) {
-                link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".is/", ".is/d/");
-                link2 = link2.replace(".to/", ".is/d/");
+
+            if (linkExternal) {
+                // bunkr implementation
+                if (linkExternal.includes('.bunkr.')) {
+
+                    if (linkExternal.includes('stream.bunkr')) {
+                        linkExternal = linkExternal.replace(".to/v/", ".is/d/");
+                    }
+
+                    if (linkExternal.includes('cdn.bunkr') && !linkExternal.includes('.zip')) {
+                        linkExternal = linkExternal.replace('cdn.', 'stream.');
+                        linkExternal = linkExternal.replace(".is/", ".is/d/");
+                        linkExternal = linkExternal.replace(".to/", ".is/d/");
+                    }
+
+                } else if (linkExternal.includes('pixeldrain.com')) {
+                    if (linkExternal.includes('/u/')) {
+                        linkExternal = linkExternal.replace('/u/', '/api/file/');
+                        linkExternal = linkExternal.concat('?download');
+                    }
+
+                    if (linkExternal.includes('/l/')) {
+                        linkExternal = linkExternal.split('#item')[0];
+                        linkExternal = linkExternal.replace('/l/', '/api/list/');
+                        linkExternal = linkExternal.concat('/zip');
+                    }
+                } else {
+                    linkExternal = '';
+                }
             }
-            else if (link2 && link2.includes('cdn.bunkr.to' && '.mov')) {
-                link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".is/", ".is/d/");
-                link2 = link2.replace(".to/", ".is/d/");
-            }
-            else if (link2 && link2.includes('cdn.bunkr.to' && '.MOV')) {
-                link2 = link2.replace('cdn.', 'stream.');
-                link2 = link2.replace(".is/", ".is/d/");
-                link2 = link2.replace(".to/", ".is/d/");
-            }
-            else if (link2 && link2.includes('cdn.bunkr.to' && '.zip')) {
-                link2 = link2
-            }
-            else {
-            link2 = '';
-            }
-            if (typeof link2 === 'undefined') {
-                link2 = '';
-            }
-            console.log($(this)[0]);
-            return link2;
+            return linkExternal;
         })
         .get();
 }
+
 function inputName(post, callback) {
     var postNumber = $(post).parent().find('li:last-child > a').text().trim();
     var threadTitle = getThreadTitle();
@@ -324,6 +331,7 @@ function inputName(post, callback) {
         callback(post, GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber);
     }
 }
+
 function getEmbedLink($elem) {
     let embed;
     if ($elem.is('span')) {
@@ -358,7 +366,7 @@ jQuery(function ($) {
     // add 'download all' button
     var downloadAllLink = $('<a href="#" class="downloadAllFiles"><img src="https://s1.putme.ga/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download All</a>');
     $("div.buttonGroup").css({ 'display': 'inline-flex', 'flex-wrap': 'wrap', 'align-items': 'center' }).prepend(downloadAllLink);
-    $(".downloadAllFiles").css({ 'padding-right': '12px'});
+    $(".downloadAllFiles").css({ 'padding-right': '12px' });
     // download all files on page
     $(document).on("click", ".downloadAllFiles", function (e) {
         e.preventDefault();
@@ -368,3 +376,4 @@ jQuery(function ($) {
         }
     });
 });
+
