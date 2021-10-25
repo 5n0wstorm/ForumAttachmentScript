@@ -100,6 +100,7 @@ const getThreadTitle = () => {
     // Remove illegal chars and names (Windows)
     return threadTitle;
 };
+
 /**
 * Format bytes as human-readable text.
 *
@@ -110,6 +111,11 @@ const getThreadTitle = () => {
 *
 * @return Formatted string.
 */
+
+const allowedDataHosts = ['pixeldrain.com'];
+
+const cyberdropDomains = ['cyberdrop.me', 'cyberdrop.cc', 'cyberdrop.nl', 'cyberdrop.to'];
+
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
@@ -129,9 +135,7 @@ function humanFileSize(bytes, si = false, dp = 1) {
 
 function download(post, fileName) {
     var $text = $(post).children('a');
-    var urlsPost = getPostLinks(post, false);
-    var urlsExternal = getAllExternalLinks(post, false);
-    var urls = urlsPost.concat(urlsExternal);
+    var urls = getPostLinks(post, false);
     var thanks = false;
     urls = urls.filter(function (e) { return e });
     var zip = new JSZip(),
@@ -144,7 +148,6 @@ function download(post, fileName) {
             const isHLS = url.includes('sendvid.com');
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
-            let cyberdropDomains = ['cyberdrop.me', 'cyberdrop.cc', 'cyberdrop.nl', 'cyberdrop.to'];
             GM_xmlhttpRequest({
                 method: isHLS ? 'POST' : 'GET',
                 url: isHLS ? 'https://nhentai-proxy.herokuapp.com/hls' : url,
@@ -156,7 +159,10 @@ function download(post, fileName) {
                     $text.text(dataText.replace('%percent', evt.total > 0 ? percentComplete.toFixed(0) : humanFileSize(evt.loaded)));
                 },
                 onload: function (response) {
-                    const isCyberdrop = false;
+                    var isCyberdrop = false;
+                    cyberdropDomains.some(element => {
+                        isCyberdrop = response.finalUrl.includes(element);
+                    });
                     try {
                         var data = response.response;
                         var name = response.responseHeaders.match(/^content-disposition.+(?:filename=)(.+)$/mi)[1].replace(/\"/g, '');
@@ -213,15 +219,17 @@ function download(post, fileName) {
     }
     next();
 }
+
 function getPostLinks(post) {
     return $(post)
         .parents('.message-main')
         .first()
         .find('.message-userContent')
         .first()
-        .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
+        .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
         .map(function () {
             let link;
+
             if ($(this).is('iframe') || $(this).is('span')) {
                 link = getEmbedLink($(this));
             } else if ($(this).has('source').length) {
@@ -229,6 +237,12 @@ function getPostLinks(post) {
                 link = $(this)[0]["currentSrc"];
             } else {
                 link = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
+            }
+            // check for valid external hosts
+            if ($(this).attr('data-host') !== undefined) {
+                if (!allowedDataHosts.includes($(this).attr('data-host'))){
+                    link = '';
+                }
             }
 
             if (typeof link !== 'undefined' && link) {
@@ -261,61 +275,40 @@ function getPostLinks(post) {
                 if (link.includes('dropbox.com')) {
                     link = link.replace('?dl=0', '?dl=1');
                 }
+                // bunkr implementation
+                if (link.includes('.bunkr.')) {
+
+                    if (link.includes('stream.bunkr')) {
+                        link = link.replace(".to/v/", ".is/d/");
+                    }
+
+                    if (link.includes('cdn.bunkr') && !link.includes('.zip')) {
+                        link = link.replace('cdn.', 'stream.');
+                        link = link.replace(".is/", ".is/d/");
+                        link = link.replace(".to/", ".is/d/");
+                    }
+                }
+                // pixeldrain implementation
+                if (link.includes('pixeldrain.com')) {
+                    if (link.includes('/u/')) {
+                        link = link.replace('?embed', '');
+                        link = link.replace('/u/', '/api/file/');
+                        link = link.concat('?download');
+                    }
+
+                    if (link.includes('/l/')) {
+                        link = link.split('#item')[0];
+                        link = link.replace('/l/', '/api/list/');
+                        link = link.concat('/zip');
+                    }
+                }
 
             } else {
+
                 link = '';
             }
 
             return link;
-        })
-        .get();
-}
-
-function getAllExternalLinks(post) {
-    return $(post)
-        .parents('.message-main')
-        .first()
-        .find('.message-userContent')
-        .first()
-        .find('a.link--external')
-        .map(function () {
-            let linkExternal;
-            linkExternal = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
-
-            if (typeof linkExternal === 'undefined') {
-                linkExternal = '';
-            }
-
-            if (linkExternal) {
-                // bunkr implementation
-                if (linkExternal.includes('.bunkr.')) {
-
-                    if (linkExternal.includes('stream.bunkr')) {
-                        linkExternal = linkExternal.replace(".to/v/", ".is/d/");
-                    }
-
-                    if (linkExternal.includes('cdn.bunkr') && !linkExternal.includes('.zip')) {
-                        linkExternal = linkExternal.replace('cdn.', 'stream.');
-                        linkExternal = linkExternal.replace(".is/", ".is/d/");
-                        linkExternal = linkExternal.replace(".to/", ".is/d/");
-                    }
-
-                } else if (linkExternal.includes('pixeldrain.com')) {
-                    if (linkExternal.includes('/u/')) {
-                        linkExternal = linkExternal.replace('/u/', '/api/file/');
-                        linkExternal = linkExternal.concat('?download');
-                    }
-
-                    if (linkExternal.includes('/l/')) {
-                        linkExternal = linkExternal.split('#item')[0];
-                        linkExternal = linkExternal.replace('/l/', '/api/list/');
-                        linkExternal = linkExternal.concat('/zip');
-                    }
-                } else {
-                    linkExternal = '';
-                }
-            }
-            return linkExternal;
         })
         .get();
 }
@@ -376,4 +369,3 @@ jQuery(function ($) {
         }
     });
 });
-
