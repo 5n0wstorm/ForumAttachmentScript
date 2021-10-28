@@ -42,7 +42,6 @@
 
 
 // ==/UserScript==
-
 const imgurBase = 'https://i.imgur.com/{hash}.mp4';
 /**
 * Set to 'true', if you wanna be asked to input zip name on your own.
@@ -183,6 +182,7 @@ async function download(post, fileName) {
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         const element = extUrl[index];
+
                         urls.push(element);
                     }
                 }
@@ -195,7 +195,16 @@ async function download(post, fileName) {
                 var extUrl = await gatherExternalLinks(urls[i], "bunkr");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
-                        const element = extUrl[index];
+                        var element = extUrl[index];
+                        if (element.includes('stream.bunkr')) {
+                            element = element.replace(".to/v/", ".is/d/");
+                        }
+
+                        if (element.includes('cdn.bunkr') && !element.includes('.zip')) {
+                            element = element.replace('cdn.', 'stream.');
+                            element = element.replace(".is/", ".is/d/");
+                            element = element.replace(".to/", ".is/d/");
+                        }
                         urls.push(element);
                     }
                 }
@@ -216,6 +225,7 @@ async function download(post, fileName) {
             const dataText = `Downloading ${current + 1}/${total} (%percent%)`
             const url = urls[current++];
             const isHLS = url.includes('sendvid.com');
+            //const isHLS = false;
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
             GM_xmlhttpRequest({
@@ -341,7 +351,7 @@ function getPostLinks(post) {
                 if (link.includes('dropbox.com')) {
                     link = link.replace('?dl=0', '?dl=1');
                 }
-                // bunkr embeddded implementation
+                // bunkr embedded implementation
                 if (link.includes('.bunkr.')) {
                     if (!link.includes('/a/')) {
                         if (link.includes('stream.bunkr')) {
