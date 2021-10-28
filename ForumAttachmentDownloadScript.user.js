@@ -196,14 +196,20 @@ async function download(post, fileName) {
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         var element = extUrl[index];
+
                         if (element.includes('stream.bunkr')) {
                             element = element.replace(".to/v/", ".is/d/");
                         }
 
                         if (element.includes('cdn.bunkr') && !element.includes('.zip')) {
-                            element = element.replace('cdn.', 'stream.');
-                            element = element.replace(".is/", ".is/d/");
-                            element = element.replace(".to/", ".is/d/");
+                            if (element.includes(".jpg")){
+                                element.replace('cdn.', 'i.');
+                            } else{
+                                element = element.replace('cdn.', 'stream.');
+                                element = element.replace(".is/", ".is/d/");
+                                element = element.replace(".to/", ".is/d/");
+                            }
+                            
                         }
                         urls.push(element);
                     }
@@ -226,6 +232,7 @@ async function download(post, fileName) {
             const url = urls[current++];
             const isHLS = url.includes('sendvid.com');
             //const isHLS = false;
+
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
             GM_xmlhttpRequest({
@@ -251,6 +258,7 @@ async function download(post, fileName) {
                         if (isLolSafeFork) {
                             const ext = name.split('.').pop();
                             name = name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;
+
                         }
                         zip.file(name, data);
                     }
@@ -417,6 +425,7 @@ function getEmbedLink($elem) {
     }
     if (!embed) return null;
     if (embed.includes('sendvid.com')) {
+
         return embed;
     }
 }
