@@ -185,8 +185,6 @@ async function download(post, fileName, altFileName) {
         if (urls[i].includes('cyberdrop')) {
             if (urls[i].includes('/a/')) {
                 albumID = urls[i].split('/a/')[1];
-                console.log(urls[i]);
-                console.log(albumID);
                 createZip = false;
                 dataHost = "cyberdrop";
                 var extUrl = await gatherExternalLinks(urls[i], "cyberdrop");
@@ -235,7 +233,6 @@ async function download(post, fileName, altFileName) {
 
     urls = urls.filter(function (e) { return e });
     urls = urls.filter(function (v, i) { return urls.indexOf(v) == i; });
-    console.log(fileName)
     if (createZip) {
         var zip = new JSZip(),
             current = 0,
@@ -253,7 +250,6 @@ async function download(post, fileName, altFileName) {
 
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
-            console.log(url)
             GM_xmlhttpRequest({
                 method: isHLS ? 'POST' : 'GET',
                 url: isHLS ? 'https://nhentai-proxy.herokuapp.com/hls' : url,
@@ -360,7 +356,6 @@ function getPostLinks(post) {
         .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl,.link--external' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
         .map(function () {
             let link;
-            console.log()
             if ($(this).is('iframe') || $(this).is('span')) {
                 link = getEmbedLink($(this));
             } else if ($(this).has('source').length) {
