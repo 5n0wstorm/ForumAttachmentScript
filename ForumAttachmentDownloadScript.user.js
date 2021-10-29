@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.1
+// @version 1.4.2
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -332,8 +332,12 @@ function getPostLinks(post) {
             if (typeof link !== 'undefined' && link) {
 
                 if (link.includes('putme.ga')) {
-                    link = link.replace('.th.', '.');
-                    link = link.replace(".md.", ".");
+                    if (!link.includes("/image/")){
+                        link = link.replace('.th.', '.');
+                        link = link.replace(".md.", ".");
+                    } else {
+                        link = "";
+                    }
                 }
 
                 if (link.includes('pixl.is')) {
