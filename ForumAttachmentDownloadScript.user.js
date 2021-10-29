@@ -111,8 +111,8 @@ const getThreadTitle = () => {
 * @return Formatted string.
 */
 
-const allowedDataHosts = ['pixeldrain.com', 'cyberdrop.me'];
-
+const allowedDataHosts = ['pixeldrain.com'];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/];
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
@@ -367,10 +367,13 @@ function getPostLinks(post) {
             if ($(this)[0].classList.contains('link--external') || $(this)[0].classList.contains('js-unfurl')) {
                 // check for valid external hosts
                 if ($(this).attr('data-host') !== undefined) {
+
                     if (!allowedDataHosts.includes($(this).attr('data-host'))) {
+
                         link = '';
+
                     }
-                } else{
+                } else if (allowedDataHostsRx.some(rx => rx.test($(this)[0].href)) === false) {
                     link = '';
                 }
             }
@@ -417,7 +420,9 @@ function getPostLinks(post) {
                             } else {
                                 link = link.replace(".to/v/", ".is/d/");
                             }
+
                         }
+
                         if (link.includes('cdn.bunkr') && !link.includes('.zip')) {
                             link = link.replace('cdn.', 'stream.');
                             link = link.replace(".is/", ".is/d/");
