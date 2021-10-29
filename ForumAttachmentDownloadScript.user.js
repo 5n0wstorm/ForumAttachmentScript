@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4
+// @version 1.4.2
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -42,7 +42,6 @@
 
 
 // ==/UserScript==
-
 const imgurBase = 'https://i.imgur.com/{hash}.mp4';
 /**
 * Set to 'true', if you wanna be asked to input zip name on your own.
@@ -87,8 +86,8 @@ const getThreadTitle = () => {
         return child.nodeType === 3 && !isNullOrEmpty(child.textContent) ? (title += child.textContent) : '';
     });
     // Check for title in object
-    if (typeof threadTitle === Object) {
-        threadTitle = threadTitle['wholeText']
+    if (typeof threadTitle === "object") {
+        threadTitle = threadTitle['wholeText'];
     }
     threadTitle = threadTitle.toString();
     // Remove emoji from title
@@ -112,8 +111,8 @@ const getThreadTitle = () => {
 * @return Formatted string.
 */
 
-const allowedDataHosts = ['pixeldrain.com', 'cyberdrop.me'];
-
+const allowedDataHosts = ['pixeldrain.com'];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/];
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
@@ -171,14 +170,23 @@ async function gatherExternalLinks(externalLink, type) {
     });
 }
 
-async function download(post, fileName) {
-    var thanks = false;
+async function download(post, fileName, altFileName) {
+    var thanks = false,
+        createZip = true;
+
     var $text = $(post).children('a');
     var urls = getPostLinks(post, false);
     var isLolSafeFork = false;
+    var dataHost = '',
+        albumID = '',
+        storePath = '';
+
     for (var i = 0, l = urls.length; i < l; i++) {
         if (urls[i].includes('cyberdrop')) {
             if (urls[i].includes('/a/')) {
+                albumID = urls[i].split('/a/')[1];
+                createZip = false;
+                dataHost = "cyberdrop";
                 var extUrl = await gatherExternalLinks(urls[i], "cyberdrop");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
@@ -192,10 +200,26 @@ async function download(post, fileName) {
         }
         if (urls[i].includes('bunkr')) {
             if (urls[i].includes('/a/')) {
+                createZip = false;
+                albumID = urls[i].split('/a/')[1];
                 var extUrl = await gatherExternalLinks(urls[i], "bunkr");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
-                        const element = extUrl[index];
+                        var element = extUrl[index];
+                        if (element.includes('stream.bunkr')) {
+                            element = element.replace(".to/v/", ".is/d/");
+                        }
+
+                        if (element.includes('cdn.bunkr') && !element.includes('.zip')) {
+                            if (element.includes(".jpg")) {
+                                element.replace('cdn.', 'i.');
+                            } else {
+                                element = element.replace('cdn.', 'stream.');
+                                element = element.replace(".is/", ".is/d/");
+                                element = element.replace(".to/", ".is/d/");
+                            }
+
+                        }
                         urls.push(element);
                     }
                 }
@@ -207,15 +231,21 @@ async function download(post, fileName) {
 
     urls = urls.filter(function (e) { return e });
     urls = urls.filter(function (v, i) { return urls.indexOf(v) == i; });
-
-    var zip = new JSZip(),
-        current = 0,
-        total = urls.length;
+    if (createZip) {
+        var zip = new JSZip(),
+            current = 0,
+            total = urls.length;
+    } else {
+        var current = 0,
+            total = urls.length;
+    }
     function next() {
         if (current < total) {
             const dataText = `Downloading ${current + 1}/${total} (%percent%)`
             const url = urls[current++];
             const isHLS = url.includes('sendvid.com');
+            //const isHLS = false;
+
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
             GM_xmlhttpRequest({
@@ -223,7 +253,7 @@ async function download(post, fileName) {
                 url: isHLS ? 'https://nhentai-proxy.herokuapp.com/hls' : url,
                 data: isHLS ? JSON.stringify({ 'url': url }) : null,
                 headers: isHLS ? { 'Content-Type': 'application/json' } : null,
-                responseType: 'arraybuffer',
+                responseType: 'blob',
                 onprogress: function (evt) {
                     var percentComplete = (evt.loaded / evt.total) * 100;
                     $text.text(dataText.replace('%percent', evt.total > 0 ? percentComplete.toFixed(0) : humanFileSize(evt.loaded)));
@@ -231,18 +261,40 @@ async function download(post, fileName) {
                 onload: function (response) {
                     try {
                         var data = response.response;
-                        var name = response.responseHeaders.match(/^content-disposition.+(?:filename=)(.+)$/mi)[1].replace(/\"/g, '');
+                        var file_name = response.responseHeaders.match(/^content-disposition.+(?:filename=)(.+)$/mi)[1].replace(/\"/g, '');
                     }
                     catch (err) {
-                        name = new URL(response.finalUrl).pathname.split('/').pop(); //response.finalUrl.split('/').pop().split('?')[0];
+                        file_name = new URL(response.finalUrl).pathname.split('/').pop(); //response.finalUrl.split('/').pop().split('?')[0];
                     } finally {
-                        name = decodeURIComponent(name);
-                        //Removing cyberdrop's ID from the filename
+                        file_name = decodeURIComponent(file_name);
+                        //Removing cyberdrop's ID from the filefile_name
                         if (isLolSafeFork) {
-                            const ext = name.split('.').pop();
-                            name = name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;
+                            const ext = file_name.split('.').pop();
+                            file_name = file_name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;
                         }
-                        zip.file(name, data);
+                        if (createZip) {
+                            zip.file(file_name, data);
+                        } else {
+                            if (response.finalUrl.includes('bunkr')) {
+                                dataHost = "bunkr";
+                                storePath = `${altFileName}/${dataHost}/${albumID}/${file_name}`;
+                            } else if (response.finalUrl.includes('cyberdrop')) {
+                                dataHost = "cyberdrop";
+                                storePath = `${altFileName}/${dataHost}/${albumID}/${file_name}`;
+                            }
+                            var url = URL.createObjectURL(data);
+                            GM_download({
+                                url: url, name: storePath,
+                                onload: function () {
+                                    URL.revokeObjectURL(url);
+                                    blob = null;
+                                },
+                                onerror: function (response) {
+                                    console.log(response)
+                                }
+                            });
+                        }
+
                     }
                     next();
                 },
@@ -254,23 +306,30 @@ async function download(post, fileName) {
             $text.text((current == 0 ? 'No Downloads!' : ''));
             return;
         } else {
-            $text.text('Generating zip...');
-            zip.generateAsync({ type: 'blob' })
-                .then(function (blob) {
-                    $text.text('Download complete!');
-                    if (!GM_download) {
-                        saveAs(blob, `${fileName}.zip`);
-                    } else {
-                        var url = URL.createObjectURL(blob);
-                        GM_download({
-                            url: url, name: `${fileName}.zip`,
-                            onload: function () {
-                                URL.revokeObjectURL(url);
-                                blob = null;
-                            }
-                        });
-                    }
-                });
+            if (createZip) {
+                $text.text('Generating zip...');
+                zip.generateAsync({ type: 'blob' })
+                    .then(function (blob) {
+                        $text.text('Download complete!');
+                        if (!GM_download) {
+                            saveAs(blob, `${fileName}.zip`);
+                        } else {
+                            var url = URL.createObjectURL(blob);
+                            GM_download({
+                                url: url, name: `${fileName}.zip`,
+                                onload: function () {
+                                    URL.revokeObjectURL(url);
+                                    blob = null;
+                                },
+                                onerror: function (response) {
+                                    console.log(response)
+                                }
+                            });
+                        }
+                    });
+            } else {
+                $text.text('Download complete!');
+            }
             //Distribute some love for your downloaded post if it was actually successful
             let likeTag;
             let likeID;
@@ -295,7 +354,6 @@ function getPostLinks(post) {
         .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl,.link--external' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
         .map(function () {
             let link;
-
             if ($(this).is('iframe') || $(this).is('span')) {
                 link = getEmbedLink($(this));
             } else if ($(this).has('source').length) {
@@ -305,17 +363,29 @@ function getPostLinks(post) {
                 link = $(this).is('[data-url]') ? $(this).data('url') : ($(this).is('[href]') ? $(this).attr('href') : $(this).data('src'));
             }
 
-            // check for valid external hosts
-            if ($(this).attr('data-host') !== undefined) {
-                if (!allowedDataHosts.includes($(this).attr('data-host'))) {
+            // filter external links
+            if ($(this)[0].classList.contains('link--external') || $(this)[0].classList.contains('js-unfurl')) {
+                // check for valid external hosts
+                if ($(this).attr('data-host') !== undefined) {
+
+                    if (!allowedDataHosts.includes($(this).attr('data-host'))) {
+
+                        link = '';
+
+                    }
+                } else if (allowedDataHostsRx.some(rx => rx.test($(this)[0].href)) === false) {
                     link = '';
                 }
             }
             if (typeof link !== 'undefined' && link) {
 
                 if (link.includes('putme.ga')) {
-                    link = link.replace('.th.', '.');
-                    link = link.replace(".md.", ".");
+                    if (!link.includes("/image/")) {
+                        link = link.replace('.th.', '.');
+                        link = link.replace(".md.", ".");
+                    } else {
+                        link = "";
+                    }
                 }
 
                 if (link.includes('pixl.is')) {
@@ -341,11 +411,16 @@ function getPostLinks(post) {
                 if (link.includes('dropbox.com')) {
                     link = link.replace('?dl=0', '?dl=1');
                 }
-                // bunkr embeddded implementation
+                // bunkr non album implementation
                 if (link.includes('.bunkr.')) {
                     if (!link.includes('/a/')) {
                         if (link.includes('stream.bunkr')) {
-                            link = link.replace(".to/v/", ".is/d/");
+                            if (link.includes('.is/')) {
+                                link = link.replace(".is/v/", ".is/d/");
+                            } else {
+                                link = link.replace(".to/v/", ".is/d/");
+                            }
+
                         }
 
                         if (link.includes('cdn.bunkr') && !link.includes('.zip')) {
@@ -386,9 +461,9 @@ function inputName(post, callback) {
     if (customName && confirm('Do you wanna input name for the zip?')) {
         let zipName = prompt('Input name:', GM_getValue('last_name', ''));
         GM_setValue('last_name', zipName);
-        callback(post, zipName ? `${threadTitle}/${zipName}` : (GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber));
+        callback(post, zipName ? `${threadTitle}/${postNumber}/${zipName}` : (GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber, `${threadTitle}/${postNumber}`));
     } else {
-        callback(post, GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber);
+        callback(post, GM_download ? `${threadTitle}/${postNumber}/${postNumber}` : threadTitle + ' - ' + postNumber, `${threadTitle}/${postNumber}`);
     }
 }
 
