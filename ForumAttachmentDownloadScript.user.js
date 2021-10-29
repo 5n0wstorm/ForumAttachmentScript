@@ -191,7 +191,6 @@ async function download(post, fileName, altFileName) {
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         const element = extUrl[index];
-                        //console.log("extUrl" + element);
                         urls.push(element);
                     }
                 }
@@ -207,7 +206,6 @@ async function download(post, fileName, altFileName) {
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         var element = extUrl[index];
-                        //console.log("extUrl" + element);
                         if (element.includes('stream.bunkr')) {
                             element = element.replace(".to/v/", ".is/d/");
                         }
@@ -479,7 +477,6 @@ function getEmbedLink($elem) {
     }
     if (!embed) return null;
     if (embed.includes('sendvid.com')) {
-        console.log(embed);
         return embed;
     }
 }
