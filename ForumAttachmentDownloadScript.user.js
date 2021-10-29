@@ -112,7 +112,7 @@ const getThreadTitle = () => {
 */
 
 const allowedDataHosts = ['pixeldrain.com'];
-const allowedDataHostsRx = [/cyberdrop/, /bunkr/];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/];
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
