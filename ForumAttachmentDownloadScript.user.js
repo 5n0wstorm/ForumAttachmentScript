@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.2
+// @version 1.4.3
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -113,6 +113,8 @@ const getThreadTitle = () => {
 
 const allowedDataHosts = ['pixeldrain.com'];
 const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/];
+var refHeader;
+var refUrl;
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
@@ -134,9 +136,10 @@ async function gatherExternalLinks(externalLink, type) {
 
     if (!type) { return undefined; }
     var resolveCache = [];
+    refHeader = externalLink;
     return new Promise((resolve, reject) => {
         GM_xmlhttpRequest({
-
+            headers: { 'Referer': externalLink },
             url: externalLink,
             method: "GET",
             responseType: 'document',
@@ -170,8 +173,18 @@ async function gatherExternalLinks(externalLink, type) {
     });
 }
 
+function headerHelper(link, isHLS = false, needsReferrer = false) {
+    if (needsReferrer) {
+        return `{ 'Referer': ${link}  }`
+    }
+    if (isHLS) {
+        return `{ 'Content-Type': 'application/json' }`
+    }
+    return null
+}
+
 async function download(post, fileName, altFileName) {
-    var thanks = false,
+    var thanks = true,
         createZip = true;
 
     var $text = $(post).children('a');
@@ -180,17 +193,19 @@ async function download(post, fileName, altFileName) {
     var dataHost = '',
         albumID = '',
         storePath = '';
-
     for (var i = 0, l = urls.length; i < l; i++) {
         if (urls[i].includes('cyberdrop')) {
             if (urls[i].includes('/a/')) {
                 albumID = urls[i].split('/a/')[1];
+                console.log("URL: " + urls[i]);
+                console.log("Album ID: " + albumID);
                 createZip = false;
                 dataHost = "cyberdrop";
                 var extUrl = await gatherExternalLinks(urls[i], "cyberdrop");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         const element = extUrl[index];
+                        //console.log("extUrl" + element);
                         urls.push(element);
                     }
                 }
@@ -200,12 +215,14 @@ async function download(post, fileName, altFileName) {
         }
         if (urls[i].includes('bunkr')) {
             if (urls[i].includes('/a/')) {
+                refUrl = urls[i];
                 createZip = false;
                 albumID = urls[i].split('/a/')[1];
                 var extUrl = await gatherExternalLinks(urls[i], "bunkr");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         var element = extUrl[index];
+                        //console.log("extUrl" + element);
                         if (element.includes('stream.bunkr')) {
                             element = element.replace(".to/v/", ".is/d/");
                         }
@@ -231,6 +248,7 @@ async function download(post, fileName, altFileName) {
 
     urls = urls.filter(function (e) { return e });
     urls = urls.filter(function (v, i) { return urls.indexOf(v) == i; });
+    console.log("Filename: " + fileName)
     if (createZip) {
         var zip = new JSZip(),
             current = 0,
@@ -244,15 +262,37 @@ async function download(post, fileName, altFileName) {
             const dataText = `Downloading ${current + 1}/${total} (%percent%)`
             const url = urls[current++];
             const isHLS = url.includes('sendvid.com');
+            var needsReferrer = false;
             //const isHLS = false;
-
+            if (isHLS) {
+                console.log(JSON.stringify({ 'url': url.replace('//', '') }))
+                // GM_xmlhttpRequest({
+                //     method: 'GET',
+                //     url: url,
+                //     responseType: 'stream',
+                //     onloadstart: async function (r) {
+                //         if (r.readyState == 4 && r.status == 200) {
+                //             const reader = r.response.getReader();
+                //             while (true) {
+                //                 const { done, value } = await reader.read(); // value is Uint8Array
+                //                 if (value) {
+                //                     console.log(value.length, 'received')
+                //                 }
+                //                 if (done) break;
+                //             }
+                //             console.log('done');
+                //         }
+                //     }
+                // });
+            }
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
+            console.log("Downloading: " + url)
             GM_xmlhttpRequest({
                 method: isHLS ? 'POST' : 'GET',
-                url: isHLS ? 'https://nhentai-proxy.herokuapp.com/hls' : url,
+                url: isHLS ? 'http://127.0.0.1:5000/json' : url,
                 data: isHLS ? JSON.stringify({ 'url': url }) : null,
-                headers: isHLS ? { 'Content-Type': 'application/json' } : null,
+                headers: headerHelper(refUrl, isHLS, needsReferrer),
                 responseType: 'blob',
                 onprogress: function (evt) {
                     var percentComplete = (evt.loaded / evt.total) * 100;
@@ -290,7 +330,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log(response)
+                                    console.log("Error response: " + response)
                                 }
                             });
                         }
@@ -322,7 +362,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log(response)
+                                    console.log("Error response: " + response)
                                 }
                             });
                         }
@@ -330,15 +370,17 @@ async function download(post, fileName, altFileName) {
             } else {
                 $text.text('Download complete!');
             }
-            //Distribute some love for your downloaded post if it was actually successful
-            let likeTag;
-            let likeID;
-            try {
-                likeTag = post.parentNode.parentNode.parentNode.querySelector('.reaction--imageHidden');
-                likeID = likeTag.getAttribute('data-th-react-plus-content-id');
-                likeTag.setAttribute("href", `/posts/${likeID}/react?reaction_id=49`);
-                likeTag.click();
-            } catch {
+            if (thanks) {
+                //Distribute some love for your downloaded post if it was actually successful
+                let likeTag;
+                let likeID;
+                try {
+                    likeTag = post.parentNode.parentNode.parentNode.querySelector('.reaction--imageHidden');
+                    likeID = likeTag.getAttribute('data-th-react-plus-content-id');
+                    likeTag.setAttribute("href", `/posts/${likeID}/react?reaction_id=49`);
+                    likeTag.click();
+                } catch {
+                }
             }
         }
     }
@@ -365,6 +407,8 @@ function getPostLinks(post) {
 
             // filter external links
             if ($(this)[0].classList.contains('link--external') || $(this)[0].classList.contains('js-unfurl')) {
+                console.log("External link: " + $(this)[0].href)
+                console.log("Host allowed? " + allowedDataHostsRx.some(rx => rx.test($(this)[0].href)))
                 // check for valid external hosts
                 if ($(this).attr('data-host') !== undefined) {
 
@@ -475,6 +519,7 @@ function getEmbedLink($elem) {
     } else {
         embed = $elem.is('[src]') ? $elem.attr('src') : $elem.data('s9e-mediaembed-src');
     }
+
     if (embed.includes('imgur.min.html')) {
         const hash = embed.split('#').pop();
         const link = imgurBase.replace('{hash}', hash);
@@ -482,6 +527,10 @@ function getEmbedLink($elem) {
     }
     if (!embed) return null;
     if (embed.includes('sendvid.com')) {
+        // embed = embed.replace('//', 'https://');
+        // var frameObj = $elem[0];
+        // console.log(frameObj);
+        // console.log(frameObj.contentWindow.document);
         return embed;
     }
 }
