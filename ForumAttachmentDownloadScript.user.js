@@ -94,6 +94,7 @@ const getThreadTitle = () => {
     if (!ALLOW_THREAD_TITLE_EMOJI) {
         threadTitle = threadTitle.replaceAll(REGEX_EMOJI, ILLEGAL_CHAR_REPLACEMENT);
     }
+    console.log(threadTitle);
     threadTitle = threadTitle.replaceAll(REGEX_WINDOWS, ILLEGAL_CHAR_REPLACEMENT);
     threadTitle = threadTitle.trim();
     // Remove illegal chars and names (Windows)
@@ -218,6 +219,8 @@ async function download(post, fileName, altFileName) {
                 refUrl = urls[i];
                 createZip = false;
                 albumID = urls[i].split('/a/')[1];
+                console.log("URL: " + urls[i]);
+                console.log("Album ID: " + albumID);
                 var extUrl = await gatherExternalLinks(urls[i], "bunkr");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
@@ -330,7 +333,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log("Error response: " + response)
+                                    console.log("Error response: <" + response['error']+'> for requested URL: '+url)
                                 }
                             });
                         }
@@ -362,7 +365,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log("Error response: " + response)
+                                    console.log("Error response: <" + response['error']+'> for requested URL: '+url)
                                 }
                             });
                         }
