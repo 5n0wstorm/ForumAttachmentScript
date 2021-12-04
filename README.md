@@ -1,6 +1,4 @@
 # ForumAttachmentScript
-
-# Information
 This script adds buttons to downloads posts from the sexy-egirls forum
 
 # Installation
