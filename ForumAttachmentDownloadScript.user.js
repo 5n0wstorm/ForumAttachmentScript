@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name Various Forums Gallery Downloader
+// @name Various Forums Gallery DownloaderTEst
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.3
+// @version 1.4.3.Test
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -77,29 +77,31 @@ const isNullOrEmpty = (str) => {
 * Gets the thread title, removes illegal characters.
 * @returns {string} String containing the thread title with illegal characters replaced.
 */
+
+// Define file name regexps
+const REGEX_EMOJI = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/gu;
+const REGEX_WINDOWS = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$|([<>:"\/\\|?*])|(\.|\s)$/gi;
+
 const getThreadTitle = () => {
-    // Define file name regexps
-    const REGEX_EMOJI = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/gu;
-    const REGEX_WINDOWS = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$|([<>:"\/\\|?*])|(\.|\s)$/gi;
+
     // Strip label buttons
     let threadTitle = [...document.querySelector('.p-title-value').childNodes].reduce((title, child) => {
-        return child.nodeType === 3 && !isNullOrEmpty(child.textContent) ? (title += child.textContent) : '';
+        return child.nodeType === 3 && !isNullOrEmpty(child.textContent) ? (title += child.textContent.replace(/\n/g, '')) : '';
     });
     // Check for title in object
     if (typeof threadTitle === "object") {
         threadTitle = threadTitle['wholeText'];
-        threadTitle = threadTitle.replace(/\n/g, '');
     }
+    threadTitle = threadTitle.replace(/\n/g, '');
     threadTitle = threadTitle.toString();
     // Remove emoji from title
     if (!ALLOW_THREAD_TITLE_EMOJI) {
         threadTitle = threadTitle.replaceAll(REGEX_EMOJI, ILLEGAL_CHAR_REPLACEMENT);
     }
-    threadTitle = threadTitle.replace(/\n/g, '');
-    console.log(threadTitle);
     threadTitle = threadTitle.replaceAll(REGEX_WINDOWS, ILLEGAL_CHAR_REPLACEMENT);
     threadTitle = threadTitle.trim();
     // Remove illegal chars and names (Windows)
+    console.log("Thread Title: " + threadTitle);
     return threadTitle;
 };
 
@@ -151,8 +153,11 @@ async function gatherExternalLinks(externalLink, type) {
                 if (type === "cyberdrop") {
 
                     var requestResponse = response.response;
-                    albumName = requestResponse.querySelector('#title');
-                    albumName = albumName['title'];
+
+                    albumName = requestResponse.getElementsByTagName("h1")[0]["innerText"].replace(/\n\s/g, '').trim();
+                    albumName = albumName.replaceAll(REGEX_EMOJI, ILLEGAL_CHAR_REPLACEMENT).replaceAll(REGEX_WINDOWS, ILLEGAL_CHAR_REPLACEMENT);
+                    console.log("Album Name: " + albumName);
+
                     var linkList = requestResponse.querySelectorAll('.image');
 
                     for (let index = 0; index < linkList.length; index++) {
@@ -165,8 +170,10 @@ async function gatherExternalLinks(externalLink, type) {
                 if (type === "bunkr") {
 
                     var requestResponse = response.response;
-                    albumName = requestResponse.title;
-                    albumName = albumName.split(' –')[0];
+                    albumName = requestResponse.getElementsByTagName("h1")[0]["innerText"].replace(/\n\s/g, '').trim();
+                    albumName = albumName.replaceAll(REGEX_EMOJI, ILLEGAL_CHAR_REPLACEMENT).replaceAll(REGEX_WINDOWS, ILLEGAL_CHAR_REPLACEMENT);
+                    console.log("Album Name: " + albumName);
+
                     var linkList = requestResponse.querySelectorAll('.image');
 
                     for (let index = 0; index < linkList.length; index++) {
@@ -192,14 +199,13 @@ function headerHelper(link, isHLS = false, needsReferrer = false) {
 }
 
 async function download(post, fileName, altFileName) {
-    var thanks = true,
+    var thanks = false,
         createZip = true;
 
     var $text = $(post).children('a');
     var urls = getPostLinks(post, false);
     var isLolSafeFork = false;
-    var dataHost = '',
-        albumID = '',
+    var albumID = '',
         storePath = '';
     var postNumber = $(post).parent().find('li:last-child > a').text().trim();
     for (var i = 0, l = urls.length; i < l; i++) {
@@ -209,7 +215,6 @@ async function download(post, fileName, altFileName) {
                 console.log("URL: " + urls[i]);
                 console.log("Album ID: " + albumID);
                 createZip = false;
-                dataHost = "cyberdrop";
                 var extUrl = await gatherExternalLinks(urls[i], "cyberdrop");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
@@ -327,11 +332,11 @@ async function download(post, fileName, altFileName) {
                             zip.file(file_name, data);
                         } else {
                             if (response.finalUrl.includes('bunkr')) {
-                                dataHost = "bunkr";
                                 storePath = `${fileName.split('/')[0]}/${albumName} - Bunkr/${file_name}`;
                             } else if (response.finalUrl.includes('cyberdrop')) {
-                                dataHost = "cyberdrop";
                                 storePath = `${fileName.split('/')[0]}/${albumName} - CyberDrop/${file_name}`;
+                            } else {
+                                storePath = `${fileName.split('/')[0]}/${postNumber}/${file_name}`;
                             }
                             var url = URL.createObjectURL(data);
                             GM_download({
