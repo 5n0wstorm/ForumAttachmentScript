@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name Various Forums Gallery DownloaderTEst
+// @name Various Forums Gallery Downloader
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
