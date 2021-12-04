@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.4
+// @version 1.4.5
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -199,7 +199,7 @@ function headerHelper(link, isHLS = false, needsReferrer = false) {
 }
 
 async function download(post, fileName, altFileName) {
-    var thanks = false,
+    var thanks = true,
         createZip = true;
 
     var $text = $(post).children('a');
