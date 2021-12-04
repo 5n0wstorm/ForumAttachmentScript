@@ -88,12 +88,15 @@ const getThreadTitle = () => {
     // Check for title in object
     if (typeof threadTitle === "object") {
         threadTitle = threadTitle['wholeText'];
+        threadTitle = threadTitle.replace(/\n/g, '');
     }
     threadTitle = threadTitle.toString();
     // Remove emoji from title
     if (!ALLOW_THREAD_TITLE_EMOJI) {
         threadTitle = threadTitle.replaceAll(REGEX_EMOJI, ILLEGAL_CHAR_REPLACEMENT);
     }
+    threadTitle = threadTitle.replace(/\n/g, '');
+    console.log(threadTitle);
     threadTitle = threadTitle.replaceAll(REGEX_WINDOWS, ILLEGAL_CHAR_REPLACEMENT);
     threadTitle = threadTitle.trim();
     // Remove illegal chars and names (Windows)
@@ -115,6 +118,7 @@ const allowedDataHosts = ['pixeldrain.com'];
 const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/];
 var refHeader;
 var refUrl;
+var albumName;
 function humanFileSize(bytes, si = false, dp = 1) {
     const thresh = si ? 1000 : 1024;
     if (Math.abs(bytes) < thresh) {
@@ -147,6 +151,8 @@ async function gatherExternalLinks(externalLink, type) {
                 if (type === "cyberdrop") {
 
                     var requestResponse = response.response;
+                    albumName = requestResponse.querySelector('#title');
+                    albumName = albumName['title'];
                     var linkList = requestResponse.querySelectorAll('.image');
 
                     for (let index = 0; index < linkList.length; index++) {
@@ -159,6 +165,8 @@ async function gatherExternalLinks(externalLink, type) {
                 if (type === "bunkr") {
 
                     var requestResponse = response.response;
+                    albumName = requestResponse.title;
+                    albumName = albumName.split(' –')[0];
                     var linkList = requestResponse.querySelectorAll('.image');
 
                     for (let index = 0; index < linkList.length; index++) {
@@ -193,6 +201,7 @@ async function download(post, fileName, altFileName) {
     var dataHost = '',
         albumID = '',
         storePath = '';
+    var postNumber = $(post).parent().find('li:last-child > a').text().trim();
     for (var i = 0, l = urls.length; i < l; i++) {
         if (urls[i].includes('cyberdrop')) {
             if (urls[i].includes('/a/')) {
@@ -218,6 +227,8 @@ async function download(post, fileName, altFileName) {
                 refUrl = urls[i];
                 createZip = false;
                 albumID = urls[i].split('/a/')[1];
+                console.log("URL: " + urls[i]);
+                console.log("Album ID: " + albumID);
                 var extUrl = await gatherExternalLinks(urls[i], "bunkr");
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
@@ -227,8 +238,8 @@ async function download(post, fileName, altFileName) {
                             element = element.replace(".to/v/", ".is/d/");
                         }
 
-                        if (element.includes('cdn.bunkr') && !element.includes('.zip')) {
-                            if (element.includes(".jpg")) {
+                        if (element.includes('cdn.bunkr') && !element.includes('.zip') && !element.includes('.pdf') && !element.includes('.ZIP') && !element.includes('.PDF')) {
+                            if (element.includes(".jpg") || element.includes(".png") || element.includes(".gif") || element.includes(".jpeg") || element.includes(".JPG") || element.includes(".PNG") || element.includes(".GIF") || element.includes(".JPEG")) {
                                 element.replace('cdn.', 'i.');
                             } else {
                                 element = element.replace('cdn.', 'stream.');
@@ -248,7 +259,7 @@ async function download(post, fileName, altFileName) {
 
     urls = urls.filter(function (e) { return e });
     urls = urls.filter(function (v, i) { return urls.indexOf(v) == i; });
-    console.log("Filename: " + fileName)
+    console.log("Download directory: " + fileName)
     if (createZip) {
         var zip = new JSZip(),
             current = 0,
@@ -317,10 +328,10 @@ async function download(post, fileName, altFileName) {
                         } else {
                             if (response.finalUrl.includes('bunkr')) {
                                 dataHost = "bunkr";
-                                storePath = `${altFileName}/${dataHost}/${albumID}/${file_name}`;
+                                storePath = `${fileName.split('/')[0]}/${albumName} - Bunkr/${file_name}`;
                             } else if (response.finalUrl.includes('cyberdrop')) {
                                 dataHost = "cyberdrop";
-                                storePath = `${altFileName}/${dataHost}/${albumID}/${file_name}`;
+                                storePath = `${fileName.split('/')[0]}/${albumName} - CyberDrop/${file_name}`;
                             }
                             var url = URL.createObjectURL(data);
                             GM_download({
@@ -330,7 +341,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log("Error response: " + response)
+                                    console.log("Error response: <" + response['error'] + '> for requested URL: ' + url)
                                 }
                             });
                         }
@@ -362,7 +373,7 @@ async function download(post, fileName, altFileName) {
                                     blob = null;
                                 },
                                 onerror: function (response) {
-                                    console.log("Error response: " + response)
+                                    console.log("Error response: <" + response['error'] + '> for requested URL: ' + url)
                                 }
                             });
                         }
@@ -507,7 +518,7 @@ function inputName(post, callback) {
         GM_setValue('last_name', zipName);
         callback(post, zipName ? `${threadTitle}/${postNumber}/${zipName}` : (GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber, `${threadTitle}/${postNumber}`));
     } else {
-        callback(post, GM_download ? `${threadTitle}/${postNumber}/${postNumber}` : threadTitle + ' - ' + postNumber, `${threadTitle}/${postNumber}`);
+        callback(post, GM_download ? `${threadTitle}/${postNumber}` : threadTitle + ' - ' + postNumber, `${threadTitle}/${postNumber}`);
     }
 }
 
