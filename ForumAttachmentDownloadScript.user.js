@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.5
+// @version 1.4.6
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -24,6 +24,7 @@
 // @connect sendvid.com
 // @connect i.redd.it
 // @connect i.ibb.co
+// @connect ibb.co
 // @connect imgur.com
 // @connect putme.ga
 // @connect imgbox.com
@@ -116,8 +117,8 @@ const getThreadTitle = () => {
 * @return Formatted string.
 */
 
-const allowedDataHosts = ['pixeldrain.com'];
-const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/];
+const allowedDataHosts = ['pixeldrain.com', 'ibb.co'];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/, /ibb.co/];
 var refHeader;
 var refUrl;
 var albumName;
@@ -183,6 +184,15 @@ async function gatherExternalLinks(externalLink, type) {
                     }
                     resolve(resolveCache);
                 }
+                if (type === "ibb.co") {
+
+                    var requestResponse = response.response;
+
+                    linkElement = requestResponse.querySelectorAll('.header-content-right')[0].getElementsByTagName('a')[0].href;
+                    console.log("ibb image url: " + linkElement);
+                    resolveCache.push(linkElement);
+                    resolve(resolveCache);
+                }
             }
         });
     });
@@ -226,6 +236,17 @@ async function download(post, fileName, altFileName) {
                 urls[i] = '';
             }
             isLolSafeFork = true;
+        }
+        if (urls[i].includes('ibb.co')) {
+            var extUrl = await gatherExternalLinks(urls[i], "ibb.co");
+            if (extUrl.length > 0) {
+                    for (let index = 0; index < extUrl.length; index++) {
+                        const element = extUrl[index];
+                        //console.log("extUrl" + element);
+                        urls.push(element);
+                }
+            }
+                urls[i] = '';
         }
         if (urls[i].includes('bunkr')) {
             if (urls[i].includes('/a/')) {
@@ -371,8 +392,11 @@ async function download(post, fileName, altFileName) {
                             saveAs(blob, `${fileName}.zip`);
                         } else {
                             var url = URL.createObjectURL(blob);
+                            console.log("url: " + url);
+                            console.log("fileName: " + fileName);
                             GM_download({
-                                url: url, name: `${fileName}.zip`,
+                                url: url,
+                                name: `${fileName}.zip`,
                                 onload: function () {
                                     URL.revokeObjectURL(url);
                                     blob = null;
@@ -489,6 +513,10 @@ function getPostLinks(post) {
                             link = link.replace(".to/", ".is/d/");
                         }
                     }
+                }
+                // ignore ibb thumbnails
+                if (link.includes('i.ibb.co')) {
+                    link = "";
                 }
                 // pixeldrain implementation
                 if (link.includes('pixeldrain.com')) {
