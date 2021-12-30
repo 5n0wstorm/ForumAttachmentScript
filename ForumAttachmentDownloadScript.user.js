@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.7
+// @version 1.4.8
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -25,6 +25,7 @@
 // @connect i.redd.it
 // @connect i.ibb.co
 // @connect ibb.co
+// @connect imagebam.com
 // @connect imgur.com
 // @connect putme.ga
 // @connect imgbox.com
@@ -119,8 +120,8 @@ const getThreadTitle = () => {
 * @return Formatted string.
 */
 
-const allowedDataHosts = ['pixeldrain.com', 'ibb.co'];
-const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/, /ibb.co/];
+const allowedDataHosts = ['pixeldrain.com', 'ibb.co', 'imagebam.com'];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/, /ibb.co/, /imagebam.com/];
 var refHeader;
 var refUrl;
 var albumName;
@@ -195,6 +196,16 @@ async function gatherExternalLinks(externalLink, type) {
                     resolveCache.push(linkElement);
                     resolve(resolveCache);
                 }
+                if (type === "imagebam.com") {
+
+                    var requestResponse = response.response;
+
+                    linkElement = requestResponse.querySelector('.main-image').src;
+                    console.log("imagebam image url: " + linkElement);
+                    resolveCache.push(linkElement);
+                    resolve(resolveCache);
+                }
+
             }
         });
     });
@@ -250,6 +261,17 @@ async function download(post, fileName, altFileName) {
             }
                 urls[i] = '';
         }
+        if (urls[i].includes('imagebam.com')) {
+            var extUrl = await gatherExternalLinks(urls[i], "imagebam.com");
+            if (extUrl.length > 0) {
+                    for (let index = 0; index < extUrl.length; index++) {
+                        const element = extUrl[index];
+                        //console.log("extUrl" + element);
+                        urls.push(element);
+                }
+            }
+                urls[i] = '';
+        }
         if (urls[i].includes('bunkr')) {
             if (urls[i].includes('/a/')) {
                 refUrl = urls[i];
@@ -266,7 +288,7 @@ async function download(post, fileName, altFileName) {
                             element = element.replace(".to/v/", ".is/d/");
                         }
 
-                        if (element.includes('cdn.bunkr') && !element.includes('.zip') && !element.includes('.pdf') && !element.includes('.ZIP') && !element.includes('.PDF')) {
+                        if (element.includes('cdn.bunkr') && !element.includes('.zip') && !element.includes('.pdf') && !element.includes('.rar') && !element.includes('.ZIP') && !element.includes('.PDF') && !element.includes('.RAR')) {
                             if (element.includes(".jpg") || element.includes(".png") || element.includes(".gif") || element.includes(".jpeg") || element.includes(".JPG") || element.includes(".PNG") || element.includes(".GIF") || element.includes(".JPEG")) {
                                 element.replace('cdn.', 'i.');
                             } else {
@@ -437,6 +459,8 @@ function getPostLinks(post) {
         .first()
         .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl,.link--external,image-link' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
         .map(function () {
+        var $text = $(post).children('a');
+        $text.text('Preparing downloads');
             let link;
             if ($(this).is('iframe') || $(this).is('span')) {
                 link = getEmbedLink($(this));
@@ -509,7 +533,7 @@ function getPostLinks(post) {
 
                         }
 
-                        if (link.includes('cdn.bunkr') && !link.includes('.zip')) {
+                        if (link.includes('cdn.bunkr') && !link.includes('.zip') && !link.includes('.rar')) {
                             link = link.replace('cdn.', 'stream.');
                             link = link.replace(".is/", ".is/d/");
                             link = link.replace(".to/", ".is/d/");
@@ -518,6 +542,10 @@ function getPostLinks(post) {
                 }
                 // ignore ibb thumbnails
                 if (link.includes('i.ibb.co')) {
+                    link = "";
+                }
+                // ignore imagebam thumbnails
+                if (link.includes('imagebam.com') && link.includes('thumbs')) {
                     link = "";
                 }
                 // pixeldrain implementation
@@ -581,13 +609,13 @@ function getEmbedLink($elem) {
         return link;
     }
     if (!embed) return null;
-    if (embed.includes('sendvid.com')) {
+    /*if (embed.includes('sendvid.com')) {
         // embed = embed.replace('//', 'https://');
         // var frameObj = $elem[0];
         // console.log(frameObj);
         // console.log(frameObj.contentWindow.document);
         return embed;
-    }
+    }*/
 }
 
 jQuery(function ($) {
