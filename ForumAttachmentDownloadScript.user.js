@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.6
+// @version 1.4.7
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -34,6 +34,8 @@
 // @connect pbs.twimg.com
 // @connect cdn.discordapp.com
 // @connect pixeldrain.com
+// @connect redgifs.com
+// @connect gfycat.com
 // @run-at document-start
 // @grant GM_xmlhttpRequest
 // @grant GM_download
@@ -433,7 +435,7 @@ function getPostLinks(post) {
         .first()
         .find('.message-userContent')
         .first()
-        .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl,.link--external' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
+        .find('.js-lbContainer,.js-lbImage,.attachment-icon a,.lbContainer-zoomer,a.link--external img,video,.js-unfurl,.link--external,image-link' + (getIFrames ? ',iframe[src],iframe[data-s9e-mediaembed-src],span[data-s9e-mediaembed][data-s9e-mediaembed-iframe]' : ''))
         .map(function () {
             let link;
             if ($(this).is('iframe') || $(this).is('span')) {
@@ -532,7 +534,6 @@ function getPostLinks(post) {
                         link = link.concat('/zip');
                     }
                 }
-
             } else {
 
                 link = '';
@@ -564,9 +565,19 @@ function getEmbedLink($elem) {
         embed = $elem.is('[src]') ? $elem.attr('src') : $elem.data('s9e-mediaembed-src');
     }
 
-    if (embed.includes('imgur.min.html')) {
+    /*if (embed.includes('imgur.min.html')) {
         const hash = embed.split('#').pop();
         const link = imgurBase.replace('{hash}', hash);
+        return link;
+    }*/
+    if (embed.includes('redgifs.com/ifr')) {
+        const redgif = embed.replace('//redgifs.com/ifr/', 'https://thumbs2.redgifs.com/');
+        const link = redgif.concat('.mp4');
+        return link;
+    }
+    if (embed.includes('gfycat.com/ifr')) {
+        const gfycat = embed.replace('//gfycat.com/ifr/', 'https://giant.gfycat.com/').replace('?hd=1', '');
+        const link = gfycat.concat('.mp4');
         return link;
     }
     if (!embed) return null;
