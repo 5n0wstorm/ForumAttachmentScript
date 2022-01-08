@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.8
+// @version 1.4.9
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -227,9 +227,9 @@ async function download(post, fileName, altFileName) {
 
     var $text = $(post).children('a');
     var urls = getPostLinks(post, false);
-    var isLolSafeFork = false;
     var albumID = '',
-        storePath = '';
+        storePath = '',
+        albuminfo = [];
     var postNumber = $(post).parent().find('li:last-child > a').text().trim();
     for (var i = 0, l = urls.length; i < l; i++) {
         if (urls[i].includes('cyberdrop')) {
@@ -242,13 +242,13 @@ async function download(post, fileName, altFileName) {
                 if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         const element = extUrl[index];
-                        //console.log("extUrl" + element);
                         urls.push(element);
+                        albuminfo.push({URL:element, albumName:albumName});
                     }
                 }
-                urls[i] = '';
+                //urls[i] = '';
+                urls.splice(i, 1);
             }
-            isLolSafeFork = true;
         }
         if (urls[i].includes('ibb.co')) {
             var extUrl = await gatherExternalLinks(urls[i], "ibb.co");
@@ -299,15 +299,17 @@ async function download(post, fileName, altFileName) {
 
                         }
                         urls.push(element);
+                        albuminfo.push({URL:element, albumName:albumName});
                     }
                 }
                 urls[i] = '';
+
             }
-            isLolSafeFork = true;
         }
     }
+    console.log(albuminfo);
 
-    urls = urls.filter(function (e) { return e });
+    urls = urls.filter(function (e) { return e });   //removes blank entries
     urls = urls.filter(function (v, i) { return urls.indexOf(v) == i; });
     console.log("Download directory: " + fileName)
     if (createZip) {
@@ -349,6 +351,7 @@ async function download(post, fileName, altFileName) {
             $text.text('Downloading...');
             $text.text(dataText.replace('%percent', 0));
             console.log("Downloading: " + url)
+            var original_url = url;
             GM_xmlhttpRequest({
                 method: isHLS ? 'POST' : 'GET',
                 url: isHLS ? 'http://127.0.0.1:5000/json' : url,
@@ -368,18 +371,31 @@ async function download(post, fileName, altFileName) {
                         file_name = new URL(response.finalUrl).pathname.split('/').pop(); //response.finalUrl.split('/').pop().split('?')[0];
                     } finally {
                         file_name = decodeURIComponent(file_name);
-                        //Removing cyberdrop's ID from the filefile_name
-                        if (isLolSafeFork) {
-                            const ext = file_name.split('.').pop();
-                            file_name = file_name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;
-                        }
                         if (createZip) {
                             zip.file(file_name, data);
                         } else {
                             if (response.finalUrl.includes('bunkr')) {
+
+                                /*//Removing bunkrs ID from the filefile_name
+                                const ext = file_name.split('.').pop();
+                                file_name = file_name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;*/
+
+                                //look up the URL in the albuminfo list and retrieve the correct album name from that
+                                let albumName = albuminfo.filter(item => (original_url.includes(item.URL))).map(item => item.albumName);
+                                console.log("bunkr album name: " + albumName);
                                 storePath = `${fileName.split('/')[0]}/${albumName} - Bunkr/${file_name}`;
+
                             } else if (response.finalUrl.includes('cyberdrop')) {
+
+                                /*//Removing cyberdrops ID from the filefile_name
+                                const ext = file_name.split('.').pop();
+                                file_name = file_name.replaceAll(/-[^-]+$|\.[A-Z0-9]{2,4}(?=-)/gi, '') + '.' + ext;*/
+
+                                //look up the URL in the albuminfo list and retrieve the correct album name from that
+                                let albumName = albuminfo.filter(item => (original_url.includes(item.URL))).map(item => item.albumName);
+                                console.log("cyberdrop album name: " + albumName);
                                 storePath = `${fileName.split('/')[0]}/${albumName} - CyberDrop/${file_name}`;
+
                             } else {
                                 storePath = `${fileName.split('/')[0]}/${postNumber}/${file_name}`;
                             }
@@ -598,6 +614,11 @@ function getEmbedLink($elem) {
         const link = imgurBase.replace('{hash}', hash);
         return link;
     }*/
+    if (embed.includes('imgur.min.html')) {
+        const link = document.querySelector('.video-post').children[0].src;
+        console.log(link);
+        return link;
+    }
     if (embed.includes('redgifs.com/ifr')) {
         const redgif = embed.replace('//redgifs.com/ifr/', 'https://thumbs2.redgifs.com/');
         const link = redgif.concat('.mp4');
