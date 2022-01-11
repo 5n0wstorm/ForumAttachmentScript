@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.4.9
+// @version 1.5.0
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -28,6 +28,7 @@
 // @connect imagebam.com
 // @connect imgur.com
 // @connect putme.ga
+// @connect putmega.com
 // @connect imgbox.com
 // @connect pixhost.to
 // @connect pixl.is
@@ -505,7 +506,7 @@ function getPostLinks(post) {
             }
             if (typeof link !== 'undefined' && link) {
 
-                if (link.includes('putme.ga')) {
+                if (link.includes('putme.ga') || link.includes('putmega.com')) {
                     if (!link.includes("/image/")) {
                         link = link.replace('.th.', '.');
                         link = link.replace(".md.", ".");
@@ -614,11 +615,6 @@ function getEmbedLink($elem) {
         const link = imgurBase.replace('{hash}', hash);
         return link;
     }*/
-    if (embed.includes('imgur.min.html')) {
-        const link = document.querySelector('.video-post').children[0].src;
-        console.log(link);
-        return link;
-    }
     if (embed.includes('redgifs.com/ifr')) {
         const redgif = embed.replace('//redgifs.com/ifr/', 'https://thumbs2.redgifs.com/');
         const link = redgif.concat('.mp4');
@@ -643,7 +639,7 @@ jQuery(function ($) {
     $('.message-attribution-opposite')
         .map(function () { return $(this).children('li:first'); })
         .each(function () {
-            var downloadLink = $('<li><a href="#" class="downloadSinglePost"><img src="https://s1.putme.ga/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download</a><li>');
+            var downloadLink = $('<li><a href="#" class="downloadSinglePost"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download</a><li>');
             var $text = downloadLink.children('a');
             downloadLink.insertBefore($(this));
             downloadLink.click(function (e) {
@@ -652,7 +648,7 @@ jQuery(function ($) {
             });
         });
     // add 'download all' button
-    var downloadAllLink = $('<a href="#" class="downloadAllFiles"><img src="https://s1.putme.ga/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download All</a>');
+    var downloadAllLink = $('<a href="#" class="downloadAllFiles"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download All</a>');
     $("div.buttonGroup").css({ 'display': 'inline-flex', 'flex-wrap': 'wrap', 'align-items': 'center' }).prepend(downloadAllLink);
     $(".downloadAllFiles").css({ 'padding-right': '12px' });
     // download all files on page
