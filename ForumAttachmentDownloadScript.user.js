@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.5.0
+// @version 1.5.1
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://i.imgur.com/5xpgAny.jpg
@@ -32,6 +32,9 @@
 // @connect imgbox.com
 // @connect pixhost.to
 // @connect pixl.is
+// @connect pixxxels.cc
+// @connect postimg.cc
+// @connect imagevenue.com
 // @connect nhentai-proxy.herokuapp.com
 // @connect pbs.twimg.com
 // @connect cdn.discordapp.com
@@ -121,8 +124,8 @@ const getThreadTitle = () => {
 * @return Formatted string.
 */
 
-const allowedDataHosts = ['pixeldrain.com', 'ibb.co', 'imagebam.com'];
-const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/, /ibb.co/, /imagebam.com/];
+const allowedDataHosts = ['pixeldrain.com', 'ibb.co', 'imagebam.com', 'imagevenue.com'];
+const allowedDataHostsRx = [/cyberdrop/, /bunkr/, /pixeldrain/, /ibb.co/, /imagebam.com/, /imagevenue.com/];
 var refHeader;
 var refUrl;
 var albumName;
@@ -206,6 +209,15 @@ async function gatherExternalLinks(externalLink, type) {
                     resolveCache.push(linkElement);
                     resolve(resolveCache);
                 }
+                if (type === "imagevenue.com") {
+
+                    var requestResponse = response.response;
+
+                    linkElement = requestResponse.querySelector('.col-md-12').getElementsByTagName('a')[0].firstElementChild.src;
+                    console.log("imagevenue image url: " + linkElement);
+                    resolveCache.push(linkElement);
+                    resolve(resolveCache);
+                }
 
             }
         });
@@ -264,6 +276,17 @@ async function download(post, fileName, altFileName) {
         }
         if (urls[i].includes('imagebam.com')) {
             var extUrl = await gatherExternalLinks(urls[i], "imagebam.com");
+            if (extUrl.length > 0) {
+                    for (let index = 0; index < extUrl.length; index++) {
+                        const element = extUrl[index];
+                        //console.log("extUrl" + element);
+                        urls.push(element);
+                }
+            }
+                urls[i] = '';
+        }
+        if (urls[i].includes('imagevenue.com')) {
+            var extUrl = await gatherExternalLinks(urls[i], "imagevenue.com");
             if (extUrl.length > 0) {
                     for (let index = 0; index < extUrl.length; index++) {
                         const element = extUrl[index];
@@ -563,6 +586,10 @@ function getPostLinks(post) {
                 }
                 // ignore imagebam thumbnails
                 if (link.includes('imagebam.com') && link.includes('thumbs')) {
+                    link = "";
+                }
+                // ignore imagevenue thumbnails
+                if (link.includes('thumbs.imagevenue.com')) {
                     link = "";
                 }
                 // pixeldrain implementation
