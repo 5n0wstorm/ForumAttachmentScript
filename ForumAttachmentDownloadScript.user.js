@@ -3,10 +3,10 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.5.2
+// @version 1.5.3
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
-// @icon https://i.imgur.com/5xpgAny.jpg
+// @icon https://s4.putmega.com/SE_Small_Purple.png
 // @license WTFPL; http://www.wtfpl.net/txt/copying/
 // @match https://forum.sexy-egirls.com/threads/*
 // @require https://code.jquery.com/jquery-3.3.1.min.js
@@ -89,6 +89,9 @@ const isNullOrEmpty = (str) => {
 // Define file name regexps
 const REGEX_EMOJI = /[\u{1f300}-\u{1f5ff}\u{1f900}-\u{1f9ff}\u{1f600}-\u{1f64f}\u{1f680}-\u{1f6ff}\u{2600}-\u{26ff}\u{2700}-\u{27bf}\u{1f1e6}-\u{1f1ff}\u{1f191}-\u{1f251}\u{1f004}\u{1f0cf}\u{1f170}-\u{1f171}\u{1f17e}-\u{1f17f}\u{1f18e}\u{3030}\u{2b50}\u{2b55}\u{2934}-\u{2935}\u{2b05}-\u{2b07}\u{2b1b}-\u{2b1c}\u{3297}\u{3299}\u{303d}\u{00a9}\u{00ae}\u{2122}\u{23f3}\u{24c2}\u{23e9}-\u{23ef}\u{25b6}\u{23f8}-\u{23fa}]/gu;
 const REGEX_WINDOWS = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])$|([<>:"\/\\|?*])|(\.|\s)$/gi;
+
+var Videos = ['.mpeg', '.avchd', '.webm', '.mpv', '.swf', '.avi', '.m4p', '.wmv', '.mp2', '.m4v', '.qt', '.mpe', '.mp4', '.flv', '.mov', '.mpg', '.ogg', '.MPEG', '.AVCHD', '.WEBM', '.MPV', '.SWF', '.AVI', '.M4P', '.WMV', '.MP2', '.M4V', '.QT', '.MPE', '.MP4', '.FLV', '.MOV', '.MPG', '.OGG'];
+var Images = ['.jpg', '.jpeg', '.png', '.gif', '.gif', '.webp', '.jpe', '.svg', '.tif', '.tiff', '.jif', '.JPG', '.JPEG', '.PNG', '.GIF', '.GIF', '.WEBP', '.JPE', '.SVG', '.TIF', '.TIFF', '.JIF'];
 
 const getThreadTitle = () => {
 
@@ -308,20 +311,15 @@ async function download(post, fileName, altFileName) {
                     for (let index = 0; index < extUrl.length; index++) {
                         var element = extUrl[index];
                         //console.log("extUrl" + element);
-                        if (element.includes('stream.bunkr')) {
-                            element = element.replace(".to/v/", ".is/d/");
+
+                        if(Videos.some(s => element.includes(s))) {
+                            element = element.replace('cdn.', 'stream.');
+                            element = element.replace(".is/", ".is/d/");
+                        }
+                        else if(Images.some(s => element.includes(s))) {
+                            element = element.replace('cdn.', 'i.');
                         }
 
-                        if (element.includes('cdn.bunkr') && !element.includes('.zip') && !element.includes('.pdf') && !element.includes('.rar') && !element.includes('.ZIP') && !element.includes('.PDF') && !element.includes('.RAR')) {
-                            if (element.includes(".jpg") || element.includes(".png") || element.includes(".gif") || element.includes(".jpeg") || element.includes(".JPG") || element.includes(".PNG") || element.includes(".GIF") || element.includes(".JPEG")) {
-                                element.replace('cdn.', 'i.');
-                            } else {
-                                element = element.replace('cdn.', 'stream.');
-                                element = element.replace(".is/", ".is/d/");
-                                element = element.replace(".to/", ".is/d/");
-                            }
-
-                        }
                         urls.push(element);
                         albuminfo.push({URL:element, albumName:albumName});
                     }
@@ -572,11 +570,19 @@ function getPostLinks(post) {
                             }
 
                         }
-
-                        if (link.includes('cdn.bunkr') && !link.includes('.zip') && !link.includes('.rar') && !link.includes('.jpg') && !link.includes('.jpeg') && !link.includes('.png') && !link.includes('.gif')) {
-                            link = link.replace('cdn.', 'stream.');
-                            link = link.replace(".is/", ".is/d/");
-                            link = link.replace(".to/", ".is/d/");
+                        else{
+                            if(Videos.some(s => link.includes(s))) {
+                                console.log("original link: " + link);
+                                link = link.replace('cdn.', 'stream.');
+                                link = link.replace(".is/", ".is/d/");
+                                link = link.replace(".to/", ".is/d/");
+                                console.log("changed link: " + link);
+                            }
+                            else if(Images.some(s => link.includes(s))) {
+                                console.log("original link: " + link);
+                                link = link.replace('cdn.', 'i.');
+                                console.log("changed link: " + link);
+                            }
                         }
                     }
                 }
@@ -666,7 +672,7 @@ jQuery(function ($) {
     $('.message-attribution-opposite')
         .map(function () { return $(this).children('li:first'); })
         .each(function () {
-            var downloadLink = $('<li><a href="#" class="downloadSinglePost"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download</a><li>');
+            var downloadLink = $('<li><a href="#" class="downloadSinglePost"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" border="0" width="14" height="14"> Download</a><li>');
             var $text = downloadLink.children('a');
             downloadLink.insertBefore($(this));
             downloadLink.click(function (e) {
@@ -675,11 +681,11 @@ jQuery(function ($) {
             });
         });
     // add 'download all' button
-    var downloadAllLink = $('<a href="#" class="downloadAllFiles"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" alt="Download" border="0" width="14" height="14"> Download All</a>');
-    $("div.buttonGroup").css({ 'display': 'inline-flex', 'flex-wrap': 'wrap', 'align-items': 'center' }).prepend(downloadAllLink);
-    $(".downloadAllFiles").css({ 'padding-right': '12px' });
+    var downloadAllLink = $('<a href="#" class="button--link button rippleButton" ID="downloadAllFiles"><img src="https://s4.putmega.com/DownloadSpaced3.gif" border="0" width="18" height="18"> Download All</a>');
+    $("div.buttonGroup").css({'display': 'inline-flex', 'flex-wrap': 'wrap', 'align-items': 'center' }).prepend(downloadAllLink);
+    //$(".downloadAllFiles").css({ 'padding-right': '12px' });
     // download all files on page
-    $(document).on("click", ".downloadAllFiles", function (e) {
+    $(document).on("click", "#downloadAllFiles", function (e) {
         e.preventDefault();
         var singlePosts = document.querySelectorAll(".downloadSinglePost");
         for (let i = 0; i < singlePosts.length; i++) {
