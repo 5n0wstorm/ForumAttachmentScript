@@ -3,7 +3,7 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.5.3
+// @version 1.5.4
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://s4.putmega.com/SE_Small_Purple.png
@@ -313,11 +313,7 @@ async function download(post, fileName, altFileName) {
                         //console.log("extUrl" + element);
 
                         if(Videos.some(s => element.includes(s))) {
-                            element = element.replace('cdn.', 'stream.');
-                            element = element.replace(".is/", ".is/d/");
-                        }
-                        else if(Images.some(s => element.includes(s))) {
-                            element = element.replace('cdn.', 'i.');
+                            element = element.replace('cdn.', 'media-files.');
                         }
 
                         urls.push(element);
@@ -564,23 +560,18 @@ function getPostLinks(post) {
                     if (!link.includes('/a/')) {
                         if (link.includes('stream.bunkr')) {
                             if (link.includes('.is/')) {
-                                link = link.replace(".is/v/", ".is/d/");
+                                link = link.replace(".is/v/", ".is/");
                             } else {
-                                link = link.replace(".to/v/", ".is/d/");
+                                link = link.replace(".to/v/", ".is/");
                             }
-
+                            link = link.replace("stream.", "media-files.");
                         }
                         else{
                             if(Videos.some(s => link.includes(s))) {
                                 console.log("original link: " + link);
-                                link = link.replace('cdn.', 'stream.');
-                                link = link.replace(".is/", ".is/d/");
-                                link = link.replace(".to/", ".is/d/");
-                                console.log("changed link: " + link);
-                            }
-                            else if(Images.some(s => link.includes(s))) {
-                                console.log("original link: " + link);
-                                link = link.replace('cdn.', 'i.');
+                                link = link.replace('cdn.', 'media-files.');
+                                //link = link.replace(".is/", ".is/d/");
+                                link = link.replace(".to/", ".is/");
                                 console.log("changed link: " + link);
                             }
                         }
