@@ -3,18 +3,20 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.5.4
+// @version 1.5.5
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @icon https://s4.putmega.com/SE_Small_Purple.png
 // @license WTFPL; http://www.wtfpl.net/txt/copying/
 // @match https://forum.sexy-egirls.com/threads/*
+// @match https://forum.thotsbay.com/index.php?threads/*
 // @require https://code.jquery.com/jquery-3.3.1.min.js
 // @require https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js
 // @require https://unpkg.com/file-saver@2.0.4/dist/FileSaver.min.js
 // @require https://cdn.jsdelivr.net/npm/m3u8-parser@4.5.2/dist/m3u8-parser.min.js
 // @connect self
 // @connect sexy-egirls.com
+// @connect thotsbay.com
 // @connect bunkr.to
 // @connect bunkr.is
 // @connect cyberdrop.me
