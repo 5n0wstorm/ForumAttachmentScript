@@ -3,10 +3,10 @@
 // @namespace https://github.com/MandoCoding
 // @author ThotDev, DumbCodeGenerator, Archivist, Mando
 // @description Download galleries from posts on XenForo forums
-// @version 1.5.5
+// @version 1.5.6
 // @updateURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
 // @downloadURL https://github.com/MandoCoding/ForumAttachmentScript/raw/main/ForumAttachmentDownloadScript.user.js
-// @icon https://s4.putmega.com/SE_Small_Purple.png
+// @icon https://jpg.church/images/2022/03/13/Thotsbay_Mobile_Logo_v1.1.png
 // @license WTFPL; http://www.wtfpl.net/txt/copying/
 // @match https://forum.sexy-egirls.com/threads/*
 // @match https://forum.thotsbay.com/index.php?threads/*
@@ -29,6 +29,7 @@
 // @connect ibb.co
 // @connect imagebam.com
 // @connect imgur.com
+// @connect jpg.church
 // @connect putme.ga
 // @connect putmega.com
 // @connect imgbox.com
@@ -240,7 +241,7 @@ function headerHelper(link, isHLS = false, needsReferrer = false) {
 }
 
 async function download(post, fileName, altFileName) {
-    var thanks = true,
+    var thanks = false,
         createZip = true;
 
     var $text = $(post).children('a');
@@ -533,7 +534,14 @@ function getPostLinks(post) {
                         link = "";
                     }
                 }
-
+                if (link.includes('jpg.church')) {
+                    if (!link.includes("/image/")) {
+                        link = link.replace('.th.', '.');
+                        link = link.replace(".md.", ".");
+                    } else {
+                        link = "";
+                    }
+                }
                 if (link.includes('pixl.is')) {
                     link = link.replace('.th.', '.');
                     link = link.replace(".md.", ".");
@@ -665,7 +673,7 @@ jQuery(function ($) {
     $('.message-attribution-opposite')
         .map(function () { return $(this).children('li:first'); })
         .each(function () {
-            var downloadLink = $('<li><a href="#" class="downloadSinglePost"><img src="https://s1.putmega.com/Download27127ce76bc766ac.gif" border="0" width="14" height="14"> Download</a><li>');
+            var downloadLink = $('<li><a href="#" class="downloadSinglePost">🡳 Download</a><li>');
             var $text = downloadLink.children('a');
             downloadLink.insertBefore($(this));
             downloadLink.click(function (e) {
@@ -674,7 +682,7 @@ jQuery(function ($) {
             });
         });
     // add 'download all' button
-    var downloadAllLink = $('<a href="#" class="button--link button rippleButton" ID="downloadAllFiles"><img src="https://s4.putmega.com/DownloadSpaced3.gif" border="0" width="18" height="18"> Download All</a>');
+    var downloadAllLink = $('<a href="#" class="button--link button rippleButton" ID="downloadAllFiles">🡳 Download All</a>');
     $("div.buttonGroup").css({'display': 'inline-flex', 'flex-wrap': 'wrap', 'align-items': 'center' }).prepend(downloadAllLink);
     //$(".downloadAllFiles").css({ 'padding-right': '12px' });
     // download all files on page
